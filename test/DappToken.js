@@ -16,7 +16,7 @@ contract('DappToken', function(accounts){
     }).then(function(standard){
       assert.equal(standard,"DApp Token v1.0",'has the correct standard')
     });
-  })
+  });
 
  
   it('sets the total supply upon deployment', function(){    
@@ -39,9 +39,7 @@ contract('DappToken', function(accounts){
       assert(error.message.indexOf('revert')>=0,'error message must contain revert');
       return tokenInstance.transfer(accounts[1], 250000, {from:accounts[0]});
     }).then(function(receipt){
-
       assert.equal(receipt.logs.length,1,'triggers one event');
-
       return tokenInstance.balanceOf(accounts[1]);
     }).then(function(balance){
       assert.equal(balance.toNumber(), 250000, 'adds the amount to the receiving account');
@@ -51,8 +49,46 @@ contract('DappToken', function(accounts){
       return tokenInstance.transfer.call(accounts[1], 250000, {from:accounts[0]});
     }).then(function(success){
       assert.equal(success, true)
-    })
+    });
+  });
 
+
+  it('approves tokens for delegated transfer', function(){
+    return DappToken.deployed().then(function(instance){
+      tokenInstance = instance;
+      return tokenInstance.approve.call(accounts[1], 100)
+    }).then(function(success){
+      assert.equal(success, true, 'it return true')
+      return tokenInstance.approve(accounts[1], 100, {from: accounts[0]});
+    }).then(function(receipt){
+      assert.equal(receipt.logs.length, 1, 'trigger one event');
+      return tokenInstance.allowance(accounts[0], accounts[1]);
+    }).then(function(allowance){
+      assert.equal(allowance.toNumber(), 100, 'stores the allowance for deledated transfer')
+    });
+  });
+
+
+  it('handles delegated token transfers', function(){
+    return DappToken.deployed().then(function(instance){
+      tokenInstance = instance;
+      fromAccount = accounts[2];
+      toAccount = accounts[3];
+      spendingAccount = accounts[4];
+      // transfer some token
+      return tokenInstance.transfer(fromAccount, 100, {from: accounts[0]});
+    }).then(function(receipt){
+      // approve
+      return tokenInstance.approve(spendingAccount, 10, {from: fromAccount});
+    }).then(function(receipt){
+      return tokenInstance.transferFrom(fromAccount, toAccount, 9999, {from: spendingAccount});
+    }).then(assert.fail).catch(function(error){
+      assert(error.message.indexOf('revert') >= 0, 'transfer too much');
+      return tokenInstance.transferFrom(fromAccount, toAccount, 20, {from: spendingAccount});
+    }).then(assert.fail).catch(function(error){
+      assert(error.message.indexOf('revert') >= 0, 'transfer could not larger then allow')
+      
+    });
   });
 
 });
