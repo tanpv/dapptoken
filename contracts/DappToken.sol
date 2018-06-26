@@ -37,37 +37,47 @@ contract DappToken {
     balanceOf[_to] += _value;
 
     // emit the event
-    Transfer(msg.sender,_to,_value);
+    emit Transfer(msg.sender,_to,_value);
 
     return true;
   }
 
   function approve(address _spender, uint256 _value) public returns (bool success) {
-    // allowance
+    // msg.sender : people trigger this function and approve to _spender spend some token from his balance
+    // _spender   : people that allow to spend
+    // _value     : number of token approve by _spender
+
+    // update allowance
     allowance[msg.sender][_spender] = _value;
-    Approval(msg.sender, _spender, _value); 
+    // emit approval event
+    emit Approval(msg.sender, _spender, _value);
     return true;
   }
 
   function transferFrom(address _from, address _to, uint256 _value) public returns (bool success){
-    // require condition
+    // _from      : people that approve msg.sender to spend
+    // msg.sender : people that allowed to spend some token from _from, this people will trigger this function
+    // _to        : people will receive token if transfer successfully
+    // _value     : number of token which will be transfer
+
+    // transfer value should smaller than balance of from account
     require(_value <= balanceOf[_from]);
+
+    // transfer value should smaller than allow number to transfer value
     require(_value <= allowance[_from][msg.sender]);
 
     // emit transfer event
-    Transfer(_from, _to, _value);
+    emit Transfer(_from, _to, _value);
     
-    // update balance
+    // update balance for _from and _to account
     balanceOf[_from] -= _value;
-    balanceOf[_to]  += _value;
+    balanceOf[_to] += _value;
 
-    // update allowance
+    // update allowance for _from account
     allowance[_from][msg.sender] -= _value;
-    
+
     return true; 
   }
-
-
 }
 
 
