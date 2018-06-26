@@ -86,10 +86,25 @@ contract('DappToken', function(accounts){
       assert(error.message.indexOf('revert') >= 0, 'transfer too much');
       return tokenInstance.transferFrom(fromAccount, toAccount, 20, {from: spendingAccount});
     }).then(assert.fail).catch(function(error){
-      assert(error.message.indexOf('revert') >= 0, 'transfer could not larger then allow')
-      
+      assert(error.message.indexOf('revert') >= 0, 'transfer could not larger then allow');
+      return tokenInstance.transferFrom.call(fromAccount, toAccount, 10, {from: spendingAccount});
+    }).then(function(success){
+      assert.equal(success, true);
+      return tokenInstance.transferFrom(fromAccount, toAccount, 10, {from: spendingAccount});
+    }).then(function(receipt){
+      assert.equal(receipt.logs.length,1,'trigger one event');
+      return tokenInstance.balanceOf(fromAccount);
+    }).then(function(balance){
+      assert.equal(balance.toNumber(), 90, 'reduce of account');
+      return tokenInstance.balanceOf(toAccount);
+    }).then(function(balance){
+      assert.equal(balance.toNumber(),10, 'increase of account');
+      return tokenInstance.allowance(fromAccount, spendingAccount);
+    }).then(function(allow){
+      assert.equal(allow, 0, 'reduce of allowance');
     });
   });
 
+  
 });
 
