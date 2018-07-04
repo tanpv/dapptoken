@@ -1,7 +1,13 @@
 App = {
+
   web3Provider: null,
   contracts: {},
   account: '0x0',
+  loading: false,
+  tokenPrice: 1000000000000000,
+  tokensSold: 0,
+  tokensAvailable: 750000,
+
   init: function() {
     console.log("init app ...")
     return App.initWeb3();
@@ -42,15 +48,60 @@ App = {
   },
 
   render: function(){
+    if (App.loading) {
+      return;
+    }
+
+    App.loading = true;
+
+    var loader =  $('#loader');
+    var content = $('#content');
+
+    loader.show();
+    content.hide();
+
     // load account data
     web3.eth.getCoinbase(function(err, account){
-      if(err === null) {
+      if (err === null) {
         App.account = account;
         $('#accountAddress').html("Your Account:" + account)
       }
-    })
-  }
+    });
 
+    App.contracts.DappTokenSale.deployed().then(function(instance){
+      
+      dappTokenSaleInstance = instance;
+      return dappTokenSaleInstance.tokenPrice();
+
+    }).then(function(tokenPrice){
+
+      console.log(tokenPrice.toNumber())
+      App.tokenPrice = tokenPrice;
+      $('.token-price').html(web3.fromWei(App.tokenPrice, "ether").toNumber());
+      return dappTokenSaleInstance.tokensSold();
+
+    }).then(function(tokensSold){
+
+      App.tokensSold = tokensSold.toNumber();
+      // App.tokensSold = 100000;
+      $('.tokens-sold').html(App.tokensSold);
+      $('.tokens-available').html(App.tokensAvailable);
+
+      var progressPercent = (App.tokensSold / App.tokensAvailable)*100;
+      $('#progress').css('width', progressPercent + '%');
+
+      // load token contract
+      App.contracts.DappToken.deployed().then(function(instance) {
+        dappTokenInstance = instance;
+        return dappTokenInstance.balanceOf(App.account);
+      }).then(function(balance){
+        $('.dapp-balance').html(balance.toNumber());
+        App.loading = false;
+        loader.hide();
+        content.show();    
+      });
+    });
+  }
 }
 
 $(function() {
