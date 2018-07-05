@@ -23,7 +23,7 @@ App = {
       App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
       web3 = new Web3(App.web3Provider);
     }
-
+    
     return App.initContracts();
   },
 
@@ -42,9 +42,23 @@ App = {
         console.log("Dapp Token Sale Address:", dappToken.address);
        })
       });
+      
+      App.listenForEvents();
 
       return App.render();
     });
+  },
+
+  listenForEvents: function() {
+    App.contracts.DappTokenSale.deployed().then(function(instance){
+      instance.Sell({},{
+        fromBlock: 0,
+        toBlock: 'latest'
+      }).watch(function(error, event){
+        console.log("event triggered", event);
+        App.render();
+      })
+    })
   },
 
   render: function(){
@@ -101,7 +115,29 @@ App = {
         content.show();    
       });
     });
+  },
+
+  buyTokens: function(){
+    $('#content').hide();
+    $('#loader').show();
+    var numberOfTokens = $('#numberOfTokens').val();
+    App.contracts.DappTokenSale.deployed().then(function(instance){
+      return instance.buyTokens(numberOfTokens,
+      {
+        from: App.account,
+        value: numberOfTokens * App.tokenPrice,
+        gas: 500000
+      })
+    }).then(function(result){
+      console.log('token bought ...');
+      $('form').trigger('reset');
+      // wait for Sell event
+      $('#loader').hide();
+      $('#content').show();
+    });
   }
+
+
 }
 
 $(function() {
