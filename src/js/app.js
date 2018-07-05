@@ -136,12 +136,10 @@ App = {
       $('#content').show();
     });
   }
-
-
 }
 
 $(function() {
   $(window).load(function() {
     App.init();
   })
-}); 
+});
